@@ -1,0 +1,32 @@
+[tools]
+node = "24.12.0"
+pnpm = "10.19.0"
+rust = "stable"
+
+[tasks.install]
+description = "Install dependencies"
+run = "pnpm install"
+
+[tasks.dev]
+description = "Run Vite dev server"
+run = "pnpm dev"
+
+[tasks.lint]
+description = "Run Biome lint checks"
+run = "pnpm lint"
+
+[tasks.test]
+description = "Run frontend tests"
+run = "pnpm test"
+
+[tasks.build]
+description = "Build frontend"
+run = "pnpm build"
+
+[tasks.tauri-dev]
+description = "Run Tauri in dev mode"
+run = "pnpm tauri:dev"
+
+[tasks.tauri-build]
+description = "Build Tauri app"
+run = "pnpm tauri:build"
