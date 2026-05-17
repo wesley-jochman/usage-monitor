@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/sheet";
 import { tauriApi } from "@/lib/tauri";
 import type { AppSettings, AppStatus, UsageSnapshot } from "@/types/contracts";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { MinusIcon, SquareIcon, XIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import {
@@ -114,7 +116,10 @@ export default function App(): JSX.Element {
   }, []);
 
   const official = snapshot?.official;
-  const isConnected = status?.rpc.available ?? false;
+  const hasRpcWarning = (snapshot?.parserWarnings ?? []).some((warning) =>
+    warning.toLowerCase().includes("rpc unavailable"),
+  );
+  const isConnected = (status?.rpc.available ?? false) && !hasRpcWarning;
   const statusDot = statusDotClasses(isConnected);
   const resetText = official?.resetLabel ?? formatDateTime(official?.resetsAt);
   const officialWindows = official?.windows ?? [];
@@ -138,6 +143,24 @@ export default function App(): JSX.Element {
     } catch (error) {
       setUiError(String(error));
     }
+  }
+
+  async function minimizeWindow(): Promise<void> {
+    await getCurrentWindow().minimize();
+  }
+
+  async function toggleMaximizeWindow(): Promise<void> {
+    await getCurrentWindow().toggleMaximize();
+  }
+
+  async function closeWindow(): Promise<void> {
+    await getCurrentWindow().close();
+  }
+
+  function runWindowAction(action: () => Promise<void>): void {
+    void action().catch((error) => {
+      setUiError(String(error));
+    });
   }
 
   return (
@@ -176,15 +199,19 @@ export default function App(): JSX.Element {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-4 rounded-xl border border-white/15 bg-transparent p-4 shadow-2xl backdrop-blur-xl"
+          className="mb-4 rounded-xl border border-white/15 bg-transparent p-3 shadow-2xl backdrop-blur-xl"
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
+            <div data-tauri-drag-region className="pr-3">
               <h1 className="text-xl font-semibold text-slate-50">
                 Codex Usage Monitor
               </h1>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div
+              data-tauri-drag-region
+              className="h-8 min-w-12 flex-1 rounded-md border border-white/10 bg-white/5"
+            />
+            <div className="flex items-center gap-2">
               <div className="relative flex h-3 w-3">
                 <span
                   className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${statusDot.ping}`}
@@ -250,6 +277,30 @@ export default function App(): JSX.Element {
                   </div>
                 </SheetContent>
               </Sheet>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 border border-white/15 bg-white/10 text-slate-100 hover:bg-white/20"
+                onClick={() => runWindowAction(minimizeWindow)}
+              >
+                <MinusIcon className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 border border-white/15 bg-white/10 text-slate-100 hover:bg-white/20"
+                onClick={() => runWindowAction(toggleMaximizeWindow)}
+              >
+                <SquareIcon className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 border border-red-300/30 bg-red-500/20 text-red-100 hover:bg-red-500/35"
+                onClick={() => runWindowAction(closeWindow)}
+              >
+                <XIcon className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </motion.div>
@@ -358,8 +409,8 @@ export default function App(): JSX.Element {
             </CardContent>
           </Card>
         </div>
-        <div className="mt-3 grid grid-cols-1 gap-3 md:gap-4 lg:grid-cols-3">
-          <Card className="border-white/15 bg-slate-950/55 text-slate-50 backdrop-blur-xl lg:col-span-2">
+        <div className="mt-3 grid grid-cols-1 gap-3 md:gap-4">
+          <Card className="border-white/15 bg-slate-950/55 text-slate-50 backdrop-blur-xl">
             <CardHeader>
               <CardTitle>Local Usage Buckets</CardTitle>
             </CardHeader>
@@ -414,19 +465,6 @@ export default function App(): JSX.Element {
                   </BarChart>
                 </ResponsiveContainer>
               </ChartContainer>
-            </CardContent>
-          </Card>
-          <Card className="border-white/15 bg-slate-950/55 text-slate-50 backdrop-blur-xl">
-            <CardHeader>
-              <CardTitle>Refresh Interval</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <p className="text-sm text-slate-300">
-                Auto-refresh is set to every 30 seconds.
-              </p>
-              <p className="text-xs text-slate-400">
-                Last refresh: {formatDateTime(snapshot?.lastUpdatedAt)}
-              </p>
             </CardContent>
           </Card>
         </div>

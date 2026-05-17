@@ -12,7 +12,8 @@
   "app": {
     "windows": [
       {
-        "title": "Codex Usage Monitor",
+        "title": "",
+        "decorations": false,
         "width": 1100,
         "height": 760
       }
